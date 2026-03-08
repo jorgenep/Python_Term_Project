@@ -1,0 +1,14 @@
+# ── Common dependencies (all platforms) ──────────────────────────────────────
+opencv-python
+numpy
+flask
+psutil
+
+# ── TFLite Runtime ────────────────────────────────────────────────────────────
+# Pick ONE of the following based on your platform:
+
+# Windows (x86-64) & Linux (x86-64):
+ai-edge-litert
+
+# Raspberry Pi 4 (ARMv7 / AArch64) — comment out ai-edge-litert above and use:
+# tflite-runtime
