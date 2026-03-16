@@ -98,8 +98,8 @@ CONFIDENCE_THRESHOLD = 0.5   # Minimum confidence to detect a person
 SKIP_FRAMES          = 2     # Process every nth frame to improve FPS
 TARGET_FPS           = 20    # Hard cap — limits CPU, RAM, and stream bandwidth
 FRAME_INTERVAL       = 1.0 / TARGET_FPS
-CAMERA_WIDTH         = 1920  # Capture resolution — lower = faster, higher = better quality
-CAMERA_HEIGHT        = 1080
+CAMERA_WIDTH         = 1280  # Capture resolution — lower = faster, higher = better quality
+CAMERA_HEIGHT        = 720
 JPEG_QUALITY         = 100    # MJPEG stream quality 1-100 (higher = better image, more RAM/bandwidth)
 
 # Initialize Interpreter
