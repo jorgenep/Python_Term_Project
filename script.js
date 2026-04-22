@@ -123,6 +123,10 @@ function setConnected(ok) {
 function startFeed() {
   if (DEMO_MODE) return;
   const img = document.getElementById('camera-stream');
+  
+  img.onload = handleFeedLoad;
+  img.onerror = handleFeedError;
+  
   img.src   = `http://${PI_HOST}:${PI_PORT}/video_feed`;
   img.style.display = 'block';
 }
