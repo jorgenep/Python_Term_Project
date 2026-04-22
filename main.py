@@ -17,10 +17,8 @@ print(f"[INFO] Platform: {'Windows' if IS_WINDOWS else ('RPi4/ARM' if IS_RPI els
 
 try:
     from flask import Flask, Response
-    # from flask_cors import CORS
+    from flask_cors import CORS
 
-    # app = Flask(__name__)
-    # CORS(app)  # Enable CORS for all routes (for API access from browser)
 
 except ImportError:
     sys.exit("[ERROR] Flask is required.  Run:  pip install flask")
@@ -32,6 +30,7 @@ from scipy.optimize import linear_sum_assignment
 
 # --- MJPEG STREAM SERVER (replaces cv2.imshow — works on all platforms) ---
 _flask_app    = Flask(__name__)
+CORS(_flask_app)
 _frame_lock   = threading.Lock()
 _frame_event  = threading.Event()  # signals that a new frame is ready
 _latest_frame = None               # bytes: JPEG-encoded frame

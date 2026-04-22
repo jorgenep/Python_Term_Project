@@ -47,10 +47,12 @@ async function pollPi() {
     return;
   }
   try {
-    const res  = await fetch(`http://${PI_HOST}:${PI_PORT}/data`, { signal: AbortSignal.timeout(2500) });
+    const res  = await fetch(`http://${PI_HOST}:${PI_PORT}/api/count`, { signal: AbortSignal.timeout(2500) });
     const data = await res.json();
-    updatePiUI(data);
-  } catch {
+    
+    updatePiUI({ count: data.occupancy }); 
+  } catch (error) {
+    console.error(error);
     setConnected(false);
   }
 }
@@ -58,65 +60,68 @@ async function pollPi() {
 function updatePiUI(d) {
   const count = Math.max(0, d.count ?? 0);
 
-  // Stats
-  document.getElementById('stat-occupancy').textContent = count;
-  document.getElementById('overlay-count').textContent  = count;
+  // 1. Current Occupancy (Card 1)
+  const statOcc = document.getElementById('stat-occupancy');
+  if (statOcc) statOcc.textContent = count;
+
+  const overlayCount = document.getElementById('overlay-count');
+  if (overlayCount) overlayCount.textContent  = count;
 
   const oTag = document.getElementById('tag-occupancy');
-  if (count === 0) {
-      oTag.className = 'stat-tag tag-blue'; oTag.textContent = 'Empty';
-  } else {
-      oTag.className = 'stat-tag tag-green'; oTag.textContent = 'Active';
+  if (oTag) {
+      if (count === 0) {
+          oTag.className = 'stat-tag tag-blue'; oTag.textContent = 'Empty';
+      } else {
+          oTag.className = 'stat-tag tag-green'; oTag.textContent = 'Active';
+      }
   }
 
-  // Peak tracking
+  // 2. Calculate Peak
   if (count > peakCount) {
     peakCount = count;
     peakTime  = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   }
-  document.getElementById('stat-peak').textContent      = peakCount;
-  document.getElementById('stat-peak-time').textContent = `at ${peakTime}`;
 
-  // Hourly history + daily average
+  // 3. Calculate Hourly Average
   const hr = new Date().getHours();
   occupancyHistory[hr] = Math.max(occupancyHistory[hr], count);
   const filled = occupancyHistory.filter(v => v > 0);
-  document.getElementById('stat-avg').textContent =
-    filled.length ? Math.round(filled.reduce((a,b) => a+b,0) / filled.length) : 0;
-  renderChart(occupancyHistory);
+  const avg = filled.length ? Math.round(filled.reduce((a,b) => a+b,0) / filled.length) : 0;
+  
+  if (typeof renderChart === 'function') {
+      renderChart(occupancyHistory);
+  }
 
-  // CPU
-  const cpu = d.cpu ?? 0;
-  document.getElementById('stat-cpu').textContent   = `${cpu}%`;
-  document.getElementById('pi-cpu-val').textContent = `${cpu}%`;
-  document.getElementById('cpu-bar').style.width    = `${Math.min(cpu,100)}%`;
-  document.getElementById('cpu-bar').style.background =
-    cpu > 80 ? 'var(--red)' : cpu > 50 ? 'var(--amber)' : 'var(--accent)';
-  const cTag = document.getElementById('tag-cpu');
-  cTag.className   = cpu > 80 ? 'stat-tag tag-red' : cpu > 50 ? 'stat-tag tag-amber' : 'stat-tag tag-green';
-  cTag.textContent = cpu > 80 ? 'High load' : cpu > 50 ? 'Moderate' : 'Normal';
+  // 4. Update the NEW Daily Summary Box
+  const comboPeak = document.getElementById('stat-combo-peak');
+  if (comboPeak) comboPeak.textContent = peakCount;
+  
+  const comboTime = document.getElementById('stat-combo-time');
+  if (comboTime) comboTime.textContent = `Peak at ${peakTime}`;
+  
+  const comboAvg = document.getElementById('stat-combo-avg');
+  if (comboAvg) comboAvg.textContent = `Avg: ${avg} / hr`;
 
-  // RAM
-  const ram      = d.ram_mb       ?? 0;
-  const sysUsed  = d.sys_used_mb  ?? 0;
-  const sysTotal = d.sys_total_mb ?? 0;
-  const ramPct   = sysTotal ? Math.round((sysUsed / sysTotal) * 100) : 0;
-  document.getElementById('pi-ram-val').textContent    = `${ram} MB`;
-  document.getElementById('pi-sysram-val').textContent = `${sysUsed}/${sysTotal} MB`;
-  document.getElementById('ram-bar').style.width       = `${Math.min(ramPct,100)}%`;
-  document.getElementById('ram-bar').style.background  =
-    ramPct > 85 ? 'var(--red)' : ramPct > 60 ? 'var(--amber)' : 'var(--green)';
+  // 5. Update old cards ONLY if they still exist
+  const oldPeak = document.getElementById('stat-peak');
+  if (oldPeak) oldPeak.textContent = peakCount;
+  
+  const oldTime = document.getElementById('stat-peak-time');
+  if (oldTime) oldTime.textContent = `at ${peakTime}`;
+  
+  const oldAvg = document.getElementById('stat-avg');
+  if (oldAvg) oldAvg.textContent = avg;
 
   setConnected(true);
 }
 
 function setConnected(ok) {
-  document.getElementById('pi-conn-dot').className     = `conn-dot ${ok ? 'ok' : 'err'}`;
-  document.getElementById('pi-conn-text').textContent  = ok
-    ? `Connected to ${PI_HOST}:${PI_PORT}` : `Offline (${PI_HOST}:${PI_PORT})`;
-  const tag = document.getElementById('feed-conn-tag');
-  tag.className   = ok ? 'stat-tag tag-green' : 'stat-tag tag-red';
-  tag.textContent = ok ? 'Stream active' : 'Offline';
+  const dot = document.getElementById('pi-conn-dot');
+  const text = document.getElementById('pi-conn-text');
+  
+  if (dot) dot.className = `conn-dot ${ok ? 'ok' : 'err'}`;
+  if (text) text.textContent = ok ? `Connected to ${PI_HOST}:${PI_PORT}` : `Offline (${PI_HOST}:${PI_PORT})`;
+
 }
 
 // CAMERA FEED
@@ -132,14 +137,23 @@ function startFeed() {
 }
 
 function handleFeedLoad() {
-  document.getElementById('feed-offline').style.display = 'none';
-  document.getElementById('feed-overlay').style.display = 'flex';
+  const offlineMsg = document.getElementById('feed-offline');
+  const overlay    = document.getElementById('feed-overlay');
+  const stream     = document.getElementById('camera-stream');
+
+  if (offlineMsg) offlineMsg.style.display = 'none';
+  if (overlay)    overlay.style.display    = 'flex';
+  if (stream)     stream.style.display     = 'block';
 }
 
 function handleFeedError() {
-  document.getElementById('camera-stream').style.display = 'none';
-  document.getElementById('feed-offline').style.display  = 'flex';
-  document.getElementById('feed-overlay').style.display  = 'none';
+  const stream     = document.getElementById('camera-stream');
+  const offlineMsg = document.getElementById('feed-offline');
+  const overlay    = document.getElementById('feed-overlay');
+
+  if (stream)     stream.style.display     = 'none';
+  if (offlineMsg) offlineMsg.style.display = 'flex';
+  if (overlay)    overlay.style.display    = 'none';
 }
 
 // CHART
@@ -191,9 +205,14 @@ function loadDB() {
 }
 
 function renderDwell(d) {
-  document.getElementById('dwell-today').textContent = `${d.today} min`;
-  document.getElementById('dwell-week').textContent  = `${d.week} min`;
-  document.getElementById('dwell-peak').textContent  = `${d.peak} min`;
+  // Grab the elements first
+  const todayEl = document.getElementById('dwell-today');
+  const weekEl  = document.getElementById('dwell-week');
+  const peakEl  = document.getElementById('dwell-peak');
+
+  if (todayEl) todayEl.textContent = `${d.today} min`;
+  if (weekEl)  weekEl.textContent  = `${d.week} min`;
+  if (peakEl)  peakEl.textContent  = `${d.peak} min`;
 }
 
 // INIT
