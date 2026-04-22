@@ -4,7 +4,7 @@ import platform
 import threading
 import webbrowser
 import psutil
-import db
+import Database as db
 
 db.init()
 
@@ -17,11 +17,11 @@ print(f"[INFO] Platform: {'Windows' if IS_WINDOWS else ('RPi4/ARM' if IS_RPI els
 
 try:
     from flask import Flask, Response
-    from flask_cors import CORS
+    # from flask_cors import CORS
 
-    app = Flask(__name__)
-    CORS(app)  # Enable CORS for all routes (for API access from browser)
-    
+    # app = Flask(__name__)
+    # CORS(app)  # Enable CORS for all routes (for API access from browser)
+
 except ImportError:
     sys.exit("[ERROR] Flask is required.  Run:  pip install flask")
 
