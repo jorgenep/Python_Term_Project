@@ -23,6 +23,7 @@ except ImportError:
 import cv2
 import numpy as np
 import time
+from scipy.optimize import linear_sum_assignment
 
 # --- MJPEG STREAM SERVER (replaces cv2.imshow — works on all platforms) ---
 _flask_app    = Flask(__name__)
@@ -129,7 +130,7 @@ TARGET_FPS           = 20    # Hard cap — limits CPU, RAM, and stream bandwidt
 FRAME_INTERVAL       = 1.0 / TARGET_FPS
 CAMERA_WIDTH         = 1280  # Capture resolution — lower = faster, higher = better quality
 CAMERA_HEIGHT        = 720
-JPEG_QUALITY         = 100    # MJPEG stream quality 1-100 (higher = better image, more RAM/bandwidth)
+JPEG_QUALITY         = 85     # MJPEG stream quality 1-100 (85 is near-lossless at ~35% less bandwidth)
 
 # Initialize Interpreter
 if not os.path.exists(MODEL_PATH):
@@ -187,28 +188,22 @@ class CentroidTracker:
         
         # Otherwise, match input centroids to existing object IDs
         else:
-            objectIDs = list(self.objects.keys())
+            objectIDs       = list(self.objects.keys())
             objectCentroids = list(self.objects.values())
-            
-            # Calculate distances between input and existing centroids
-            D = []
-            for oc in objectCentroids:
-                row = []
-                for ic in inputCentroids:
-                    row.append(np.linalg.norm(np.array(oc) - np.array(ic)))
-                D.append(row)
-            D = np.array(D)
 
-            rows = D.min(axis=1).argsort()
-            cols = D.argmin(axis=1)[rows]
+            # Vectorised Euclidean distance matrix: shape (n_objects, n_detections)
+            D = np.linalg.norm(
+                np.array(objectCentroids)[:, np.newaxis] - inputCentroids[np.newaxis, :],
+                axis=2
+            )
+
+            # Hungarian algorithm — guaranteed optimal, no greedy collision bugs
+            row_indices, col_indices = linear_sum_assignment(D)
 
             usedRows = set()
             usedCols = set()
 
-            for (row, col) in zip(rows, cols):
-                if row in usedRows or col in usedCols:
-                    continue
-
+            for (row, col) in zip(row_indices, col_indices):
                 objectID = objectIDs[row]
                 self.objects[objectID] = inputCentroids[col]
                 self.disappeared[objectID] = 0
@@ -333,18 +328,25 @@ try:
                     total_count -= 1
                     db.log_event("exit", objectID, total_count)
                     trackableObjects[objectID] = x_current
+                    print(f"[EVENT] Exit  — Occupancy: {total_count}")
 
                 # Moving Right to Left (Entry)
                 elif x_previous > boundary and x_current <= boundary:
                     total_count += 1
                     db.log_event("entry", objectID, total_count)
                     trackableObjects[objectID] = x_current
+                    print(f"[EVENT] Entry — Occupancy: {total_count}")
 
             # Draw centroid and ID
             text = "ID {}".format(objectID)
             cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(frame, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
+
+        # Remove stale entries for IDs the tracker has already deregistered
+        for stale_id in list(trackableObjects.keys()):
+            if stale_id not in objects:
+                del trackableObjects[stale_id]
 
         # 5. Dashboard / Display
         _proc     = psutil.Process(os.getpid())

@@ -17,11 +17,12 @@ It is highly recommended to use a virtual environment (`venv`) to keep your depe
 
 **On Linux/macOS:**
 ```bash
-# Navigate to the phase-3 directory
-cd phase-3
+# Navigate to the project directory
+cd Python_Term_Project
 
 # Create the virtual environment
-python3 -m venv venv
+# Use --copies to avoid broken shebangs on immutable distros (Bazzite, Silverblue, etc.)
+python3 -m venv venv --copies
 
 # Activate the virtual environment
 source venv/bin/activate
@@ -62,8 +63,16 @@ pip install -r requirements.txt
 
 ### 4. Run the Project
 
-With the dependencies installed, you can start the application:
+With the dependencies installed, start the application using the provided launcher script.
+On Bazzite, this script automatically detects whether you launched it from the host shell or
+from the VS Code Flatpak terminal, then chooses the correct runtime:
 
 ```bash
-python main.py
+./run.sh
+```
+
+Activating the venv first is optional when using `run.sh`:
+
+```bash
+bash run.sh
 ```
