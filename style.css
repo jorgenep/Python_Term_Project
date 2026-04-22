@@ -132,10 +132,10 @@ main {
   margin-top: 4px;
 }
 
-.tag-green { background: var(--green-lt); color: var(--green); }
-.tag-amber { background: var(--amber-lt); color: var(--amber); }
-.tag-red   { background: var(--red-lt);   color: var(--red);   }
-.tag-blue  { background: var(--accent-lt); color: var(--accent); }
+.tag-green { color: var(--green); }
+.tag-amber { color: var(--amber); }
+.tag-red   { color: var(--red);   }
+.tag-blue  { color: var(--accent); }
 
 /* CAMERA FEED */
 .feed-card {
