@@ -4,9 +4,7 @@ import platform
 import threading
 import webbrowser
 import psutil
-import db
-
-db.init()
+import Database as db
 
 # --- PLATFORM DETECTION ---
 IS_WINDOWS = sys.platform == 'win32'
