@@ -17,6 +17,7 @@ _SCHEMA = """
           CREATE TABLE IF NOT EXISTS events (
                                                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
                                                 timestamp      REAL    NOT NULL,          -- Unix epoch (float)
+                                                day            TEXT    NOT NULL,
                                                 direction      TEXT    NOT NULL,          -- 'entry' or 'exit'
                                                 object_id      INTEGER,                   -- tracker ID that crossed
                                                 occupancy      INTEGER NOT NULL           -- occupancy AFTER this event
@@ -92,7 +93,7 @@ def log_event(direction: str, object_id: int, occupancy: int):
     """Log a single entry or exit crossing."""
     _enqueue(
         "INSERT INTO events (timestamp, direction, object_id, occupancy) VALUES (?,?,?,?)",
-        (time.time(), direction, object_id, occupancy)
+        (time.time(),time.strftime("%Y-%m-%d"), direction, object_id, occupancy)
     )
 
 
@@ -158,6 +159,34 @@ def get_daily_summary() -> list:
                            GROUP BY day
                            ORDER BY day DESC
                            """).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_daily_peak_occupancy() -> list:
+    """Peak (maximum) occupancy reached for each calendar day."""
+    with _con() as con:
+        rows = con.execute("""
+            SELECT
+                day,
+                MAX(occupancy) AS peak_occupancy
+            FROM events
+            GROUP BY day
+            ORDER BY day DESC
+        """).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_daily_avg_occupancy() -> list:
+    """Average occupancy across all events for each calendar day."""
+    with _con() as con:
+        rows = con.execute("""
+            SELECT
+                day,
+                ROUND(AVG(occupancy), 2) AS avg_occupancy
+            FROM events
+            GROUP BY day
+            ORDER BY day DESC
+        """).fetchall()
         return [dict(r) for r in rows]
 
 
