@@ -6,13 +6,11 @@ import os
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracking.db")
 
-# --- Background write queue (never blocks camera loop) ---
+# --- Background write queue
 _write_queue = queue.Queue()
 _db_thread = None
 
-# ─────────────────────────────────────────────
-# SCHEMA
-# ─────────────────────────────────────────────
+
 _SCHEMA = """
           CREATE TABLE IF NOT EXISTS events (
                                                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,9 +39,7 @@ _SCHEMA = """
           """
 
 
-# ─────────────────────────────────────────────
-# INIT
-# ─────────────────────────────────────────────
+
 def init():
     """Create DB file + tables if they don't exist. Call once at startup."""
     con = sqlite3.connect(DB_PATH)
@@ -54,17 +50,15 @@ def init():
     _start_writer()
 
 
-# ─────────────────────────────────────────────
-# ASYNC WRITE WORKER
-# ─────────────────────────────────────────────
+#loop for the writer
 def _writer_loop():
     con = sqlite3.connect(DB_PATH)
-    con.execute("PRAGMA journal_mode=WAL")  # allows concurrent reads while writing
-    con.execute("PRAGMA synchronous=NORMAL")  # safe + fast on Pi SD card
+    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("PRAGMA synchronous=NORMAL")
     while True:
         try:
             task = _write_queue.get(timeout=5)
-            if task is None:  # poison pill → shutdown
+            if task is None:  # shutdown
                 break
             sql, params = task
             con.execute(sql, params)
@@ -86,9 +80,7 @@ def _enqueue(sql, params=()):
     _write_queue.put((sql, params))
 
 
-# ─────────────────────────────────────────────
-# WRITE HELPERS  (called from main.py)
-# ─────────────────────────────────────────────
+#helpers for write
 def log_event(direction: str, object_id: int, occupancy: int):
     """Log a single entry or exit crossing."""
     _enqueue(
@@ -98,7 +90,7 @@ def log_event(direction: str, object_id: int, occupancy: int):
 
 
 def log_snapshot(occupancy: int, process_ram_mb: float, sys_ram_mb: float, fps: float):
-    """Log a periodic system snapshot (every 60 frames)."""
+    #60 second frame snapshot
     _enqueue(
         "INSERT INTO snapshots (timestamp, occupancy, process_ram_mb, sys_ram_mb, fps) VALUES (?,?,?,?,?)",
         (time.time(), occupancy, process_ram_mb, sys_ram_mb, fps)
@@ -106,16 +98,14 @@ def log_snapshot(occupancy: int, process_ram_mb: float, sys_ram_mb: float, fps: 
 
 
 def log_reset(previous_count: int, note: str = "manual reset"):
-    """Log an occupancy counter reset."""
+   #reset occupancy counter
     _enqueue(
         "INSERT INTO resets (timestamp, previous_count, note) VALUES (?,?,?)",
         (time.time(), previous_count, note)
     )
 
 
-# ─────────────────────────────────────────────
-# READ HELPERS  (called from Flask API routes)
-# ─────────────────────────────────────────────
+#read helpers from flask
 def _con():
     """Read-only connection. WAL mode allows this while writer is active."""
     con = sqlite3.connect(DB_PATH)
@@ -148,7 +138,7 @@ def get_recent_snapshots(limit: int = 100) -> list:
 
 
 def get_daily_summary() -> list:
-    """Entries and exits grouped by calendar day."""
+    #in and out by day
     with _con() as con:
         rows = con.execute("""
                            SELECT
@@ -163,7 +153,7 @@ def get_daily_summary() -> list:
 
 
 def get_daily_peak_occupancy() -> list:
-    """Peak (maximum) occupancy reached for each calendar day."""
+    #max room population by day
     with _con() as con:
         rows = con.execute("""
             SELECT
@@ -177,7 +167,7 @@ def get_daily_peak_occupancy() -> list:
 
 
 def get_daily_avg_occupancy() -> list:
-    """Average occupancy across all events for each calendar day."""
+    #average population by day
     with _con() as con:
         rows = con.execute("""
             SELECT
@@ -191,7 +181,7 @@ def get_daily_avg_occupancy() -> list:
 
 
 def shutdown():
-    """Flush remaining writes before process exits."""
+    #destroy rest of writes before exiting
     _write_queue.put(None)
     if _db_thread:
         _db_thread.join(timeout=5)
