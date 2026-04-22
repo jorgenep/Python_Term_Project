@@ -1,0 +1,168 @@
+import sqlite3
+import threading
+import queue
+import time
+import os
+
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracking.db")
+
+# --- Background write queue (never blocks camera loop) ---
+_write_queue = queue.Queue()
+_db_thread = None
+
+# ─────────────────────────────────────────────
+# SCHEMA
+# ─────────────────────────────────────────────
+_SCHEMA = """
+          CREATE TABLE IF NOT EXISTS events (
+                                                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                timestamp      REAL    NOT NULL,          -- Unix epoch (float)
+                                                direction      TEXT    NOT NULL,          -- 'entry' or 'exit'
+                                                object_id      INTEGER,                   -- tracker ID that crossed
+                                                occupancy      INTEGER NOT NULL           -- occupancy AFTER this event
+          );
+
+          CREATE TABLE IF NOT EXISTS snapshots (
+                                                   id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                   timestamp      REAL    NOT NULL,
+                                                   occupancy      INTEGER NOT NULL,
+                                                   process_ram_mb REAL,
+                                                   sys_ram_mb     REAL,
+                                                   fps            REAL
+          );
+
+          CREATE TABLE IF NOT EXISTS resets (
+                                                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                timestamp      REAL    NOT NULL,
+                                                previous_count INTEGER NOT NULL,
+                                                note           TEXT
+          ); \
+          """
+
+
+# ─────────────────────────────────────────────
+# INIT
+# ─────────────────────────────────────────────
+def init():
+    """Create DB file + tables if they don't exist. Call once at startup."""
+    con = sqlite3.connect(DB_PATH)
+    con.executescript(_SCHEMA)
+    con.commit()
+    con.close()
+    print(f"[DB] Initialized → {DB_PATH}")
+    _start_writer()
+
+
+# ─────────────────────────────────────────────
+# ASYNC WRITE WORKER
+# ─────────────────────────────────────────────
+def _writer_loop():
+    con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA journal_mode=WAL")  # allows concurrent reads while writing
+    con.execute("PRAGMA synchronous=NORMAL")  # safe + fast on Pi SD card
+    while True:
+        try:
+            task = _write_queue.get(timeout=5)
+            if task is None:  # poison pill → shutdown
+                break
+            sql, params = task
+            con.execute(sql, params)
+            con.commit()
+        except queue.Empty:
+            continue
+        except Exception as e:
+            print(f"[DB] Write error: {e}")
+    con.close()
+
+
+def _start_writer():
+    global _db_thread
+    _db_thread = threading.Thread(target=_writer_loop, daemon=True)
+    _db_thread.start()
+
+
+def _enqueue(sql, params=()):
+    _write_queue.put((sql, params))
+
+
+# ─────────────────────────────────────────────
+# WRITE HELPERS  (called from main.py)
+# ─────────────────────────────────────────────
+def log_event(direction: str, object_id: int, occupancy: int):
+    """Log a single entry or exit crossing."""
+    _enqueue(
+        "INSERT INTO events (timestamp, direction, object_id, occupancy) VALUES (?,?,?,?)",
+        (time.time(), direction, object_id, occupancy)
+    )
+
+
+def log_snapshot(occupancy: int, process_ram_mb: float, sys_ram_mb: float, fps: float):
+    """Log a periodic system snapshot (every 60 frames)."""
+    _enqueue(
+        "INSERT INTO snapshots (timestamp, occupancy, process_ram_mb, sys_ram_mb, fps) VALUES (?,?,?,?,?)",
+        (time.time(), occupancy, process_ram_mb, sys_ram_mb, fps)
+    )
+
+
+def log_reset(previous_count: int, note: str = "manual reset"):
+    """Log an occupancy counter reset."""
+    _enqueue(
+        "INSERT INTO resets (timestamp, previous_count, note) VALUES (?,?,?)",
+        (time.time(), previous_count, note)
+    )
+
+
+# ─────────────────────────────────────────────
+# READ HELPERS  (called from Flask API routes)
+# ─────────────────────────────────────────────
+def _con():
+    """Read-only connection. WAL mode allows this while writer is active."""
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row  # rows behave like dicts
+    return con
+
+
+def get_latest_occupancy() -> int:
+    with _con() as con:
+        row = con.execute(
+            "SELECT occupancy FROM events ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        return row["occupancy"] if row else 0
+
+
+def get_recent_events(limit: int = 50) -> list:
+    with _con() as con:
+        rows = con.execute(
+            "SELECT * FROM events ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_recent_snapshots(limit: int = 100) -> list:
+    with _con() as con:
+        rows = con.execute(
+            "SELECT * FROM snapshots ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_daily_summary() -> list:
+    """Entries and exits grouped by calendar day."""
+    with _con() as con:
+        rows = con.execute("""
+                           SELECT
+                               date(timestamp, 'unixepoch', 'localtime') AS day,
+                               SUM(CASE WHEN direction='entry' THEN 1 ELSE 0 END) AS entries,
+                               SUM(CASE WHEN direction='exit'  THEN 1 ELSE 0 END) AS exits
+                           FROM events
+                           GROUP BY day
+                           ORDER BY day DESC
+                           """).fetchall()
+        return [dict(r) for r in rows]
+
+
+def shutdown():
+    """Flush remaining writes before process exits."""
+    _write_queue.put(None)
+    if _db_thread:
+        _db_thread.join(timeout=5)

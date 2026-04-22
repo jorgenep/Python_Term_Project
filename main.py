@@ -4,6 +4,9 @@ import platform
 import threading
 import webbrowser
 import psutil
+import db
+
+db.init()
 
 # --- PLATFORM DETECTION ---
 IS_WINDOWS = sys.platform == 'win32'
@@ -89,6 +92,32 @@ except ImportError:
             "  RPi4 / ARM : pip install tflite-runtime\n"
             "  x86-64     : pip install ai-edge-litert"
         )
+
+from flask import jsonify, request
+
+@_flask_app.route('/api/count')
+def api_count():
+    return jsonify({"occupancy": total_count})
+
+@_flask_app.route('/api/events')
+def api_events():
+    limit = int(request.args.get('limit', 50))
+    return jsonify(db.get_recent_events(limit))
+
+@_flask_app.route('/api/snapshots')
+def api_snapshots():
+    return jsonify(db.get_recent_snapshots())
+
+@_flask_app.route('/api/summary')
+def api_summary():
+    return jsonify(db.get_daily_summary())
+
+@_flask_app.route('/api/reset', methods=['POST'])
+def api_reset():
+    global total_count
+    db.log_reset(previous_count=total_count)
+    total_count = 0
+    return jsonify({"status": "ok", "occupancy": 0})
 
 # --- CONFIGURATION ---
 SCRIPT_DIR           = os.path.dirname(os.path.abspath(__file__))
@@ -302,11 +331,13 @@ try:
                 # Moving Left to Right (Exit)
                 if x_previous < boundary and x_current >= boundary:
                     total_count -= 1
+                    db.log_event("exit", objectID, total_count)
                     trackableObjects[objectID] = x_current
 
                 # Moving Right to Left (Entry)
                 elif x_previous > boundary and x_current <= boundary:
                     total_count += 1
+                    db.log_event("entry", objectID, total_count)
                     trackableObjects[objectID] = x_current
 
             # Draw centroid and ID
@@ -332,7 +363,10 @@ try:
 
         # Print RAM to terminal every 60 frames (~3 s at 20 FPS)
         if frame_count % 60 == 0:
-            print(f"[MEM] Process: {ram_mb:.1f} MB  |  System: {sys_used:.0f}/{sys_total:.0f} MB  ({sys_ram.percent:.1f}% used)")
+            elapsed_fps = 60 / (time.time() - loop_start + 0.001)
+            print(
+                f"[MEM] Process: {ram_mb:.1f} MB  |  System: {sys_used:.0f}/{sys_total:.0f} MB  ({sys_ram.percent:.1f}% used)")
+            db.log_snapshot(total_count, ram_mb, sys_used, elapsed_fps)
 
         # Encode frame as JPEG and push to MJPEG stream (lower quality = less RAM)
         ok, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
@@ -351,3 +385,4 @@ except KeyboardInterrupt:
     print("\n[INFO] Stopped by user.")
 finally:
     cap.release()
+    db.shutdown()
