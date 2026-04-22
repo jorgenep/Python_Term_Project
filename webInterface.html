@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Occupancy Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">&#128200;</div>
+    Occupancy Monitor
+  </div>
+  <div class="header-right">
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<main>
+  <div class="card stat-card">
+    <div class="card-label">Current Occupancy</div>
+    <div class="stat-value" id="stat-occupancy">--</div>
+    <div class="stat-sub">people present</div>
+    <div class="stat-tag tag-green" id="tag-occupancy">Loading...</div>
+    <div class="stat-icon">&#128100;</div>
+  </div>
+
+  <div class="card stat-card">
+    <div class="card-label">Peak Today</div>
+    <div class="stat-value" id="stat-peak">--</div>
+    <div class="stat-sub" id="stat-peak-time">at --:--</div>
+    <div class="stat-tag tag-blue">Today's High</div>
+    <div class="stat-icon">&#128200;</div>
+  </div>
+
+  <div class="card stat-card">
+    <div class="card-label">Pi CPU</div>
+    <div class="stat-value" id="stat-cpu">--%</div>
+    <div class="stat-sub">Raspberry Pi 4</div>
+    <div class="stat-tag tag-amber" id="tag-cpu">Polling...</div>
+    <div class="stat-icon">&#9881;</div>
+  </div>
+
+  <div class="card stat-card">
+    <div class="card-label">Daily Average</div>
+    <div class="stat-value" id="stat-avg">--</div>
+    <div class="stat-sub">people per hour</div>
+    <div class="stat-tag tag-green">Today</div>
+    <div class="stat-icon">&#8773;</div>
+  </div>
+
+  <div class="card feed-card">
+    <div class="feed-header">
+      <span class="feed-title">Camera Feed</span>
+      <div class="stat-tag tag-green" id="feed-conn-tag">Connecting...</div>
+    </div>
+    <div class="feed-body">
+      <img id="camera-stream" src="" alt="Camera stream" onerror="handleFeedError()" onload="handleFeedLoad()" style="display:none;" />
+      <div id="feed-offline" class="offline-msg">
+        <div class="icon">&#128247;</div>
+        <div>Camera offline</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:4px;">
+          <span style="font-family:'DM Mono',monospace;" id="pi-url-display">--</span>
+        </div>
+      </div>
+      <div class="feed-overlay" id="feed-overlay" style="display:none;">
+        <div class="feed-count">
+          OCCUPANCY
+          <span id="overlay-count">0</span>
+        </div>
+        <div style="font-size:.7rem;color:rgba(255,255,255,.6);font-family:'DM Mono',monospace;">
+          Stream active
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card breakdown-card">
+    <div class="dwell-section">
+      <div class="card-label">Avg Dwell Time (DB)</div>
+      <div class="dwell-grid">
+        <div class="dwell-item">
+          <div class="dwell-label">Today</div>
+          <div class="dwell-val" id="dwell-today">-- min</div>
+        </div>
+        <div class="dwell-item">
+          <div class="dwell-label">This week</div>
+          <div class="dwell-val" id="dwell-week">-- min</div>
+        </div>
+        <div class="dwell-item">
+          <div class="dwell-label">Peak dwell</div>
+          <div class="dwell-val" id="dwell-peak">-- min</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <div class="card-label">Hourly Occupancy &mdash; Today</div>
+    <div class="chart-wrap">
+      <div class="chart-bars" id="chart-bars"></div>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#c7d2fe;"></div>Normal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div>Peak hour</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber);"></div>Current hour</div>
+    </div>
+  </div>
+
+  <div class="card pi-bar">
+    <div class="card-label">Pi&nbsp;Hardware</div>
+    <div class="divider"></div>
+    <div class="pi-metric">
+      <span class="pi-metric-label">CPU</span>
+      <div class="mini-bar-wrap"><div class="mini-bar" id="cpu-bar" style="width:0%;"></div></div>
+      <span class="pi-metric-val" id="pi-cpu-val">--%</span>
+    </div>
+    <div class="divider"></div>
+    <div class="pi-metric">
+      <span class="pi-metric-label">RAM (proc)</span>
+      <div class="mini-bar-wrap"><div class="mini-bar" id="ram-bar" style="width:0%;background:var(--green);"></div></div>
+      <span class="pi-metric-val" id="pi-ram-val">-- MB</span>
+    </div>
+    <div class="divider"></div>
+    <div class="pi-metric">
+      <span class="pi-metric-label">System RAM</span>
+      <span class="pi-metric-val" id="pi-sysram-val">--/-- MB</span>
+    </div>
+    <div class="divider"></div>
+    <div class="pi-metric">
+      <span class="pi-metric-label">FPS cap</span>
+      <span class="pi-metric-val">20</span>
+    </div>
+    <div class="divider"></div>
+    <div class="pi-metric">
+      <span class="pi-metric-label">Model</span>
+      <span class="pi-metric-val">detect.tflite</span>
+    </div>
+    <div class="conn-status">
+      <div class="conn-dot err" id="pi-conn-dot"></div>
+      <span id="pi-conn-text">Not connected</span>
+    </div>
+  </div>
+</main>
+
+<div id="config-overlay" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-title">Connect to Raspberry Pi</div>
+    <div class="modal-desc">
+      Enter your Pi's IP. The dashboard polls
+      <code>/data</code> for occupancy and hardware stats.
+    </div>
+    <label class="modal-label">PI IP ADDRESS &amp; PORT</label>
+    <div class="modal-inputs">
+      <input id="pi-ip-input" type="text" placeholder="e.g. 192.168.1.42" value="localhost" />
+      <input id="pi-port-input" type="text" placeholder="8080" value="8080" class="port-input" />
+    </div>
+    <button class="btn-primary" onclick="applyConfig()">Connect</button>
+    <button class="btn-secondary" onclick="applyConfig(true)">Use demo data (no Pi)</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
