@@ -3,6 +3,7 @@ opencv-python
 numpy
 flask
 psutil
+scipy
 
 # ── TFLite Runtime ────────────────────────────────────────────────────────────
 # Pick ONE of the following based on your platform:
