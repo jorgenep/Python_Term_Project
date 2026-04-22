@@ -6,6 +6,8 @@ import webbrowser
 import psutil
 import Database as db
 
+db.init()
+
 # --- PLATFORM DETECTION ---
 IS_WINDOWS = sys.platform == 'win32'
 IS_LINUX   = sys.platform.startswith('linux')
