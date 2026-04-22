@@ -4,7 +4,7 @@ import platform
 import threading
 import webbrowser
 import psutil
-import db
+import Database as db
 
 db.init()
 
