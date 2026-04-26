@@ -15,6 +15,9 @@
     Occupancy Monitor
   </div>
   <div class="header-right">
+    <div id="pi-conn-dot" class="conn-dot"></div>
+    <div id="pi-conn-text" style="color: white; margin-right: 15px; font-family: monospace;"></div>
+    
     <div class="clock" id="clock">--:--:--</div>
   </div>
 </header>
@@ -36,20 +39,12 @@
     <div class="stat-icon">&#128200;</div>
   </div>
 
-  <div class="card stat-card">
-    <div class="card-label">Pi CPU</div>
-    <div class="stat-value" id="stat-cpu">--%</div>
-    <div class="stat-sub">Raspberry Pi 4</div>
-    <div class="stat-tag tag-amber" id="tag-cpu">Polling...</div>
-    <div class="stat-icon">&#9881;</div>
-  </div>
-
-  <div class="card stat-card">
-    <div class="card-label">Daily Average</div>
-    <div class="stat-value" id="stat-avg">--</div>
-    <div class="stat-sub">people per hour</div>
-    <div class="stat-tag tag-green">Today</div>
-    <div class="stat-icon">&#8773;</div>
+<div class="card stat-card">
+    <div class="card-label">Daily Summary</div>
+    <div class="stat-value" id="stat-combo-peak">--</div>
+    <div class="stat-sub" id="stat-combo-time">Peak at --:--</div>
+    <div class="stat-tag tag-purple" id="stat-combo-avg">Avg: -- / hr</div>
+    <div class="stat-icon">&#128202;</div>
   </div>
 
   <div class="card feed-card">
@@ -63,35 +58,7 @@
         <div style="font-size:.7rem;color:var(--muted);margin-top:4px;">
           <span style="font-family:'DM Mono',monospace;" id="pi-url-display">--</span>
         </div>
-      </div>
-      <div class="feed-overlay" id="feed-overlay" style="display:none;">
-        <div class="feed-count">
-          OCCUPANCY
-          <span id="overlay-count">0</span>
-        </div>
-        <div style="font-size:.7rem;color:rgba(255,255,255,.6);font-family:'DM Mono',monospace;">
-          Stream active
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="card breakdown-card">
-    <div class="dwell-section">
-      <div class="card-label">Avg Dwell Time (DB)</div>
-      <div class="dwell-grid">
-        <div class="dwell-item">
-          <div class="dwell-label">Today</div>
-          <div class="dwell-val" id="dwell-today">-- min</div>
-        </div>
-        <div class="dwell-item">
-          <div class="dwell-label">This week</div>
-          <div class="dwell-val" id="dwell-week">-- min</div>
-        </div>
-        <div class="dwell-item">
-          <div class="dwell-label">Peak dwell</div>
-          <div class="dwell-val" id="dwell-peak">-- min</div>
-        </div>
       </div>
     </div>
   </div>

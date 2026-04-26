@@ -82,10 +82,9 @@ def _enqueue(sql, params=()):
 
 #helpers for write
 def log_event(direction: str, object_id: int, occupancy: int):
-    """Log a single entry or exit crossing."""
     _enqueue(
-        "INSERT INTO events (timestamp, direction, object_id, occupancy) VALUES (?,?,?,?)",
-        (time.time(),time.strftime("%Y-%m-%d"), direction, object_id, occupancy)
+        "INSERT INTO events (timestamp, day, direction, object_id, occupancy) VALUES (?,?,?,?,?)",
+        (time.time(), time.strftime("%Y-%m-%d"), direction, object_id, occupancy)
     )
 
 
@@ -179,6 +178,21 @@ def get_daily_avg_occupancy() -> list:
         """).fetchall()
         return [dict(r) for r in rows]
 
+def get_hourly_occupancy_today() -> list:
+    with _con() as con:
+        rows = con.execute("""
+            SELECT
+                CAST(strftime('%H', timestamp, 'unixepoch', 'localtime') AS INTEGER) AS hour,
+                MAX(occupancy) AS peak_occupancy
+            FROM events
+            WHERE day = date('now', 'localtime')
+            GROUP BY hour
+            ORDER BY hour
+        """).fetchall()
+        result = [0] * 24
+        for r in rows:
+            result[r['hour']] = r['peak_occupancy']
+        return result
 
 def shutdown():
     #destroy rest of writes before exiting

@@ -17,10 +17,8 @@ print(f"[INFO] Platform: {'Windows' if IS_WINDOWS else ('RPi4/ARM' if IS_RPI els
 
 try:
     from flask import Flask, Response
-    # from flask_cors import CORS
+    from flask_cors import CORS
 
-    # app = Flask(__name__)
-    # CORS(app)  # Enable CORS for all routes (for API access from browser)
 
 except ImportError:
     sys.exit("[ERROR] Flask is required.  Run:  pip install flask")
@@ -32,20 +30,21 @@ from scipy.optimize import linear_sum_assignment
 
 # --- MJPEG STREAM SERVER (replaces cv2.imshow — works on all platforms) ---
 _flask_app    = Flask(__name__)
+CORS(_flask_app)
 _frame_lock   = threading.Lock()
 _frame_event  = threading.Event()  # signals that a new frame is ready
 _latest_frame = None               # bytes: JPEG-encoded frame
 
 _HTML_PAGE = """
 <!doctype html><html><head>
-<title>Phase 3 — Live Count</title>
+<title>Live Count</title>
 <style>
   body  { background:#111; display:flex; flex-direction:column;
           align-items:center; justify-content:center; height:100vh; margin:0; }
   img   { max-width:100%; border:2px solid #0f0; }
   h2    { color:#0f0; font-family:monospace; margin-bottom:8px; }
 </style></head><body>
-<h2>Phase 3 — Live Person Count</h2>
+<h2>Live Person Count</h2>
 <img src="/video_feed" alt="stream">
 </body></html>
 """
@@ -124,6 +123,10 @@ def api_reset():
     db.log_reset(previous_count=total_count)
     total_count = 0
     return jsonify({"status": "ok", "occupancy": 0})
+
+@_flask_app.route('/api/hourly')
+def api_hourly():
+    return jsonify(db.get_hourly_occupancy_today())
 
 # --- CONFIGURATION ---
 SCRIPT_DIR           = os.path.dirname(os.path.abspath(__file__))
@@ -330,7 +333,10 @@ try:
 
                 # Moving Left to Right (Exit)
                 if x_previous < boundary and x_current >= boundary:
-                    total_count -= 1
+                    
+                    if total_count > 0:
+                        total_count -= 1
+                        
                     db.log_event("exit", objectID, total_count)
                     trackableObjects[objectID] = x_current
                     print(f"[EVENT] Exit  — Occupancy: {total_count}")

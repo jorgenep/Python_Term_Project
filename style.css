@@ -25,7 +25,9 @@ body {
   min-height: 100vh;
 }
 
-/* HEADER */
+/* =========================================
+   HEADER
+   ========================================= */
 header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -65,23 +67,32 @@ header {
   color: var(--muted);
 }
 
-/* LAYOUT */
+/* =========================================
+   MAIN LAYOUT (Centered Flexbox)
+   ========================================= */
 main {
-  max-width: 1320px;
+  max-width: 800px; /* Locks everything into a sleek center column */
   margin: 0 auto;
   padding: 32px 24px;
-  display: grid;
-  gap: 20px;
-  grid-template-columns: repeat(12, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
 }
 
-/* CARDS */
+/* =========================================
+   BASE CARDS
+   ========================================= */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .card-label {
@@ -93,11 +104,12 @@ main {
   margin-bottom: 8px;
 }
 
-/* STAT CARDS */
+/* =========================================
+   TOP ROW: STAT CARDS (50/50 Split)
+   ========================================= */
 .stat-card {
-  grid-column: span 3;
-  display: flex;
-  flex-direction: column;
+  flex: 1 1 calc(50% - 12px);
+  max-width: calc(50% - 12px);
   gap: 4px;
   position: relative;
   overflow: hidden;
@@ -115,9 +127,11 @@ main {
 
 .stat-icon {
   position: absolute;
-  top: 20px; right: 20px;
-  font-size: 1.5rem;
-  opacity: .12;
+  top: 50%; 
+  right: 24px;
+  transform: translateY(-50%);
+  font-size: 3rem;
+  opacity: .05;
 }
 
 .stat-tag {
@@ -136,20 +150,29 @@ main {
 .tag-amber { color: var(--amber); }
 .tag-red   { color: var(--red);   }
 .tag-blue  { color: var(--accent); }
+.tag-purple { color: #8b5cf6; background: #ede9fe; } /* Added for the new avg box */
 
-/* CAMERA FEED */
-.feed-card {
-  grid-column: span 8;
-  padding: 0;
-  overflow: hidden;
+/* =========================================
+   BOTTOM ROWS: FULL WIDTH CARDS
+   ========================================= */
+.feed-card, .chart-card, .breakdown-card {
+  flex: 1 1 100%;
+  max-width: 100%;
+  width: 100%;
 }
+
+/* =========================================
+   CAMERA FEED
+   ========================================= */
+.feed-card { padding: 0; overflow: hidden; }
 
 .feed-header {
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center; /* Centered */
+  width: 100%;
 }
 
 .feed-title { font-weight: 600; font-size: .9rem; }
@@ -161,12 +184,13 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 #camera-stream {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* Prevents stretching, centers video */
   display: block;
 }
 
@@ -184,6 +208,7 @@ main {
   font-family: 'DM Mono', monospace;
   color: #fff;
   font-size: .8rem;
+  text-align: left;
 }
 
 .feed-count span {
@@ -203,24 +228,23 @@ main {
 
 .offline-msg .icon { font-size: 2rem; opacity: .4; }
 
-/* BREAKDOWN / DWELL CARD */
-.breakdown-card {
-  grid-column: span 4;
-  display: flex;
-  flex-direction: column;
-}
-
+/* =========================================
+   BREAKDOWN / DWELL CARD
+   ========================================= */
 .dwell-section {
   padding-top: 0;
   margin-top: 0;
   border-top: none;
+  width: 100%;
 }
 
 .dwell-grid {
   display: flex;
-  gap: 16px;
+  justify-content: center;
+  gap: 32px;
   flex-wrap: wrap;
   margin-top: 10px;
+  width: 100%;
 }
 
 .dwell-item .dwell-label { font-size: .7rem; color: var(--muted); }
@@ -232,23 +256,29 @@ main {
   margin-top: 2px;
 }
 
-/* CHART */
-.chart-card { grid-column: span 8; }
-
+/* =========================================
+   CHART
+   ========================================= */
 .chart-wrap {
   margin-top: 16px;
-  height: 140px;
+  height: 200px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .chart-bars {
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   height: 100%;
-  gap: 4px;
+  width: 100%;
+  gap: 6px;
 }
 
 .bar-col {
   flex: 1;
+  max-width: 40px; /* Keeps bars from getting too fat */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -298,8 +328,10 @@ main {
 
 .chart-legend {
   display: flex;
+  justify-content: center;
   gap: 16px;
-  margin-top: 12px;
+  margin-top: 16px;
+  width: 100%;
 }
 
 .legend-item {
@@ -312,41 +344,9 @@ main {
 
 .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
 
-/* PI STATUS BAR */
-.pi-bar {
-  grid-column: span 12;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
-  padding: 16px 24px;
-}
-
-.pi-bar .card-label { margin: 0; }
-
-.pi-metric { display: flex; align-items: center; gap: 8px; }
-.pi-metric-label { color: var(--muted); font-size: .75rem; }
-.pi-metric-val {
-  font-family: 'DM Mono', monospace;
-  font-weight: 500;
-  font-size: .82rem;
-}
-
-.mini-bar-wrap {
-  width: 80px; height: 5px;
-  background: var(--border);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.mini-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width .6s ease;
-}
-
-.divider { width: 1px; height: 24px; background: var(--border); }
-
+/* =========================================
+   CONNECTION STATUS INDICATORS
+   ========================================= */
 .conn-status {
   display: flex;
   align-items: center;
@@ -359,7 +359,9 @@ main {
 .conn-dot.ok  { background: var(--green); }
 .conn-dot.err { background: var(--red); }
 
-/* MODAL STYLES */
+/* =========================================
+   MODAL OVERLAY
+   ========================================= */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.45);
   display: flex; align-items: center; justify-content: center; z-index: 999;
@@ -378,17 +380,15 @@ main {
 .btn-primary { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font-family: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
 .btn-secondary { width: 100%; padding: 10px; border: none; border-radius: 8px; margin-top: 8px; background: transparent; color: var(--muted); font-family: inherit; font-size: .82rem; cursor: pointer; }
 
-/* RESPONSIVE */
-@media (max-width: 960px) {
-  .stat-card      { grid-column: span 6; }
-  .feed-card      { grid-column: span 12; }
-  .breakdown-card { grid-column: span 12; }
-  .chart-card     { grid-column: span 12; }
-  .pi-bar         { grid-column: span 12; }
-}
-
+/* =========================================
+   RESPONSIVE
+   ========================================= */
 @media (max-width: 600px) {
-  .stat-card { grid-column: span 12; }
+  /* On mobile, stack the two top cards on top of each other */
+  .stat-card {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
   header { padding: 0 16px; }
   main   { padding: 16px 12px; }
 }

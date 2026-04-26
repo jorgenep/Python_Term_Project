@@ -17,3 +17,8 @@ venv.bak/
 
 # Mac OS
 .DS_Store
+
+# Database Files
+tracking.db
+tracking.db-shm
+tracking.db-wal
