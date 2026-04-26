@@ -164,7 +164,6 @@ def get_daily_peak_occupancy() -> list:
         """).fetchall()
         return [dict(r) for r in rows]
 
-
 def get_daily_avg_occupancy() -> list:
     #average population by day
     with _con() as con:
@@ -193,6 +192,21 @@ def get_hourly_occupancy_today() -> list:
         for r in rows:
             result[r['hour']] = r['peak_occupancy']
         return result
+
+def get_daily_peak_time() -> str:
+    with _con() as con:
+        row = con.execute("""
+            SELECT timestamp
+            FROM events
+            WHERE day = date('now', 'localtime')
+            ORDER BY occupancy DESC
+            LIMIT 1
+        """).fetchone()
+        if row:
+            import time
+            t = time.localtime(row['timestamp'])
+            return time.strftime("%I:%M %p", t)
+        return None
 
 def shutdown():
     #destroy rest of writes before exiting

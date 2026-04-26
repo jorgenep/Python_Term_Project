@@ -128,6 +128,13 @@ def api_reset():
 def api_hourly():
     return jsonify(db.get_hourly_occupancy_today())
 
+@_flask_app.route('/api/peak')
+def api_peak():
+    peak_time = db.get_daily_peak_time()
+    peak_count = db.get_daily_peak_occupancy()
+    today = peak_count[0]['peak_occupancy'] if peak_count else 0
+    return jsonify({"peak_count": today, "peak_time": peak_time})
+
 # --- CONFIGURATION ---
 SCRIPT_DIR           = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH           = os.path.join(SCRIPT_DIR, "detect.tflite")
@@ -336,10 +343,9 @@ try:
                     
                     if total_count > 0:
                         total_count -= 1
-                        
-                    db.log_event("exit", objectID, total_count)
-                    trackableObjects[objectID] = x_current
-                    print(f"[EVENT] Exit  — Occupancy: {total_count}")
+                        db.log_event("exit", objectID, total_count)
+                        trackableObjects[objectID] = x_current
+                        print(f"[EVENT] Exit  — Occupancy: {total_count}")
 
                 # Moving Right to Left (Entry)
                 elif x_previous > boundary and x_current <= boundary:

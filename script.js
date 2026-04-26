@@ -229,9 +229,20 @@ async function init() {
     console.warn('Could not load hourly history, starting fresh.');
   }
 
+    // After the hourly fetch, add this:
+  try {
+    const res = await fetch(`http://${PI_HOST}:${PI_PORT}/api/peak`);
+    const data = await res.json();
+    if (data.peak_count) peakCount = data.peak_count;
+    if (data.peak_time)  peakTime  = data.peak_time;
+  } catch {
+    console.warn('Could not load peak data, starting fresh.');
+  }
+
   loadDB();
   startFeed();
   pollPi();
   setInterval(pollPi, POLL_MS);
   setInterval(loadDB, DB_REFRESH);
+  
 }
