@@ -37,14 +37,14 @@ _latest_frame = None               # bytes: JPEG-encoded frame
 
 _HTML_PAGE = """
 <!doctype html><html><head>
-<title>Phase 3 — Live Count</title>
+<title>Live Count</title>
 <style>
   body  { background:#111; display:flex; flex-direction:column;
           align-items:center; justify-content:center; height:100vh; margin:0; }
   img   { max-width:100%; border:2px solid #0f0; }
   h2    { color:#0f0; font-family:monospace; margin-bottom:8px; }
 </style></head><body>
-<h2>Phase 3 — Live Person Count</h2>
+<h2>Live Person Count</h2>
 <img src="/video_feed" alt="stream">
 </body></html>
 """
@@ -329,7 +329,10 @@ try:
 
                 # Moving Left to Right (Exit)
                 if x_previous < boundary and x_current >= boundary:
-                    total_count -= 1
+                    
+                    if total_count > 0:
+                        total_count -= 1
+                        
                     db.log_event("exit", objectID, total_count)
                     trackableObjects[objectID] = x_current
                     print(f"[EVENT] Exit  — Occupancy: {total_count}")
