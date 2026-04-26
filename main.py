@@ -124,6 +124,10 @@ def api_reset():
     total_count = 0
     return jsonify({"status": "ok", "occupancy": 0})
 
+@_flask_app.route('/api/hourly')
+def api_hourly():
+    return jsonify(db.get_hourly_occupancy_today())
+
 # --- CONFIGURATION ---
 SCRIPT_DIR           = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH           = os.path.join(SCRIPT_DIR, "detect.tflite")

@@ -215,8 +215,20 @@ function renderDwell(d) {
   if (peakEl)  peakEl.textContent  = `${d.peak} min`;
 }
 
-// INIT
-function init() {
+async function init() {
+  // Seed chart with today's historical data so it survives restarts
+  try {
+    const res = await fetch(`http://${PI_HOST}:${PI_PORT}/api/hourly`);
+    const data = await res.json();
+    if (Array.isArray(data) && data.length === 24) {
+      occupancyHistory = data;
+      const histPeak = Math.max(...data);
+      if (histPeak > peakCount) peakCount = histPeak;
+    }
+  } catch {
+    console.warn('Could not load hourly history, starting fresh.');
+  }
+
   loadDB();
   startFeed();
   pollPi();
