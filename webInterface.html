@@ -4,92 +4,1087 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Occupancy Monitor</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+/* ==========================================
+   VARIABLES & RESET
+   ========================================== */
+:root {
+  --bg:         #0f1117;
+  --surface:    #1a1d27;
+  --surface-2:  #22263a;
+  --border:     #2e3248;
+  --text:       #e8e9f0;
+  --muted:      #6b7280;
+  --accent:     #6366f1;
+  --accent-lt:  rgba(99,102,241,.15);
+  --green:      #22c55e;
+  --green-lt:   rgba(34,197,94,.15);
+  --amber:      #f59e0b;
+  --amber-lt:   rgba(245,158,11,.15);
+  --red:        #ef4444;
+  --red-lt:     rgba(239,68,68,.15);
+  --blue:       #3b82f6;
+  --blue-lt:    rgba(59,130,246,.15);
+  --purple:     #a855f7;
+  --purple-lt:  rgba(168,85,247,.15);
+  --radius:     12px;
+  --radius-sm:  8px;
+  --shadow:     0 4px 24px rgba(0,0,0,.5);
+  --font:       'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:       'JetBrains Mono', 'Courier New', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+::selection { background: transparent; color: inherit; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ==========================================
+   LAYOUT
+   ========================================== */
+#app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* ==========================================
+   HEADER
+   ========================================== */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 60px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 16px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.brand-icon {
+  width: 32px; height: 32px;
+  background: var(--accent-lt);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.conn-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.conn-dot.ok   { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+.conn-dot.err  { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+.conn-dot.demo { background: var(--amber);  box-shadow: 0 0 6px var(--amber); }
+
+.header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.clock {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding-right: 4px;
+}
+
+.icon-btn {
+  width: 34px; height: 34px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 1rem;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s;
+}
+.icon-btn:hover      { background: var(--surface-2); color: var(--text); border-color: var(--accent); }
+.danger-btn:hover    { border-color: var(--red); color: var(--red); background: var(--red-lt); }
+
+/* ==========================================
+   MAIN
+   ========================================== */
+main {
+  flex: 1;
+  min-height: 0;
+  padding: 16px 20px;
+  width: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+  overflow: hidden;
+}
+
+/* ==========================================
+   BASE CARD
+   ========================================== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-title {
+  font-weight: 600;
+  font-size: 0.83rem;
+  letter-spacing: 0.01em;
+}
+
+/* ==========================================
+   STAT CARDS
+   ========================================== */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--accent); }
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.stat-icon { font-size: 1.3rem; opacity: 0.35; }
+
+.stat-value {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.stat-hint { font-size: 0.72rem; color: var(--muted); }
+
+.stat-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--accent-lt);
+  color: var(--accent);
+}
+.badge-green  { background: var(--green-lt);  color: var(--green); }
+.badge-blue   { background: var(--blue-lt);   color: var(--blue); }
+.badge-amber  { background: var(--amber-lt);  color: var(--amber); }
+.badge-red    { background: var(--red-lt);    color: var(--red); }
+.badge-purple { background: var(--purple-lt); color: var(--purple); }
+.badge-muted  { background: var(--surface-2); color: var(--muted); }
+
+/* ==========================================
+   MID ROW: FEED + EVENTS
+   ========================================== */
+.mid-row {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 16px;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Feed */
+.feed-card { display: flex; flex-direction: column; }
+
+.feed-status {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.feed-status.live { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+.feed-body {
+  flex: 1;
+  min-height: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#camera-stream {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;
+}
+
+.offline-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+.offline-icon  { font-size: 2.5rem; opacity: 0.3; }
+.offline-title { font-size: 0.85rem; font-weight: 600; }
+.offline-sub   { font-family: var(--mono); font-size: 0.7rem; }
+
+/* Events */
+.events-card { display: flex; flex-direction: column; }
+
+.event-count {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.events-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.events-empty {
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  transition: background 0.1s;
+}
+.event-row:hover { background: var(--surface-2); }
+.event-row:last-child { border-bottom: none; }
+
+.event-dir {
+  width: 54px;
+  flex-shrink: 0;
+  font-size: 0.63rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+.dir-entry { color: var(--green); }
+.dir-exit  { color: var(--red);   }
+
+.event-occ  { font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.event-time { color: var(--muted); font-family: var(--mono); font-size: 0.7rem; margin-left: auto; }
+
+/* ==========================================
+   CHART
+   ========================================== */
+.chart-area {
+  padding: 16px 20px 4px;
+  height: 180px;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  gap: 4px;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 4px;
+  position: relative;
+  cursor: pointer;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  min-height: 3px;
+  transition: height 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.bar:hover { filter: brightness(1.3); }
+.bar.norm  { background: var(--surface-2); border: 1px solid var(--border); }
+.bar.peak  { background: var(--accent); }
+.bar.now   { background: var(--amber); }
+
+.bar-label {
+  font-size: 0.52rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.bar-tooltip {
+  position: absolute;
+  bottom: calc(100% + 28px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.68rem;
+  padding: 4px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+  display: none;
+  z-index: 10;
+  pointer-events: none;
+}
+.bar-col:hover .bar-tooltip { display: block; }
+
+.chart-legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+.dot-normal  { background: var(--surface-2); border: 1px solid var(--border); }
+.dot-peak    { background: var(--accent); }
+.dot-current { background: var(--amber); }
+
+/* ==========================================
+   CHART CONTROLS
+   ========================================== */
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-group {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.toggle-btn {
+  padding: 3px 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-family: var(--mono);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.toggle-btn:hover  { color: var(--text); }
+.toggle-btn.active { background: var(--surface-2); color: var(--text); }
+
+/* ==========================================
+   MODAL
+   ========================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  width: 420px;
+  max-width: 92vw;
+  box-shadow: var(--shadow);
+}
+
+.modal-header { margin-bottom: 24px; }
+.modal-title  { font-weight: 700; font-size: 1.1rem; margin-bottom: 6px; }
+.modal-sub    { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+
+.form-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.form-row { display: flex; gap: 8px; margin-bottom: 16px; }
+
+.form-input {
+  flex: 1;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus { border-color: var(--accent); }
+.port-input { width: 80px; flex: none; text-align: center; }
+
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.btn-primary:hover { filter: brightness(1.12); }
+
+.btn-ghost {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+/* ==========================================
+   SCROLLBAR
+   ========================================== */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 900px) {
+  .mid-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  main           { padding: 16px; gap: 14px; }
+  .stats-row     { grid-template-columns: 1fr; }
+  header         { padding: 0 16px; }
+  .header-center { display: none; }
+  .stat-value    { font-size: 2.4rem; }
+}
+
+  </style>
 </head>
 <body>
+<div id="app">
 
-<header>
-  <div class="logo">
-    Occupancy Monitor
-  <div class="header-right">
-    <div id="pi-conn-text" style="color: white; margin-right: 15px; font-family: monospace;"></div>
-    
-    <div class="clock" id="clock">--:--:--</div>
-  </div>
-</header>
-
-<main>
-  <div class="card stat-card">
-    <div class="card-label">Current Occupancy</div>
-    <div class="stat-value" id="stat-occupancy">--</div>
-    <div class="stat-sub">people present</div>
-    <div class="stat-tag tag-green" id="tag-occupancy">Loading...</div>
-    <div class="stat-icon">&#128100;</div>
-  </div>
-
-  <div class="card stat-card">
-    <div class="card-label">Peak Today</div>
-    <div class="stat-value" id="stat-peak">--</div>
-    <div class="stat-sub" id="stat-peak-time">at --:--</div>
-    <div class="stat-tag tag-blue">Today's High</div>
-    <div class="stat-icon">&#128200;</div>
-  </div>
-
-<div class="card stat-card">
-    <div class="card-label">Daily Summary</div>
-    <div class="stat-value" id="stat-combo-peak">--</div>
-    <div class="stat-sub" id="stat-combo-time">Peak at --:--</div>
-    <div class="stat-tag tag-purple" id="stat-combo-avg">Avg: -- / hr</div>
-    <div class="stat-icon">&#128202;</div>
-  </div>
-
-  <div class="card feed-card">
-    <div class="feed-header">
-      <span class="feed-title">Camera Feed</span>
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="header-brand">
+      <span class="brand-name">Occupancy Monitor</span>
     </div>
-    <div class="feed-body">
-      <img id="camera-stream" alt="Camera stream" style="display:none;" /><div id="feed-offline" class="offline-msg">
-        <div class="icon">&#128247;</div>
-        <div>Camera offline</div>
-        <div style="font-size:.7rem;color:var(--muted);margin-top:4px;">
-          <span style="font-family:'DM Mono',monospace;" id="pi-url-display">--</span>
+
+    <div class="header-actions">
+      <span class="clock" id="clock">--:--:--</span>
+      <button class="icon-btn" id="settings-btn" title="Connection settings">&#9881;</button>
+      <button class="icon-btn danger-btn" id="reset-btn" title="Reset occupancy count">&#8635;</button>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main>
+
+    <!-- Stat cards -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Current Occupancy</span>
         </div>
-
+        <div class="stat-value" id="stat-occupancy">--</div>
+        <div class="stat-footer">
+          <span class="stat-badge" id="badge-occupancy">Loading...</span>
+          <span class="stat-hint">people present</span>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <div class="card chart-card">
-    <div class="card-label">Hourly Occupancy &mdash; Today</div>
-    <div class="chart-wrap">
-      <div class="chart-bars" id="chart-bars"></div>
-    </div>
-    <div class="chart-legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#c7d2fe;"></div>Normal</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div>Peak hour</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--amber);"></div>Current hour</div>
-    </div>
-  </div>
-</main>
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Peak Today</span>
+        </div>
+        <div class="stat-value" id="stat-peak">--</div>
+        <div class="stat-footer">
+          <span class="stat-badge badge-blue">Today's High</span>
+          <span class="stat-hint" id="stat-peak-time">at --:--</span>
+        </div>
+      </div>
 
-<div id="config-overlay" class="modal-overlay">
-  <div class="modal-content">
-    <div class="modal-title">Connect to Raspberry Pi</div>
-    <div class="modal-desc">
-      Enter your Pi's IP. The dashboard polls
-      <code>/data</code> for occupancy and hardware stats.
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Hourly Average</span>
+        </div>
+        <div class="stat-value" id="stat-avg">--</div>
+        <div class="stat-footer">
+          <span class="stat-badge badge-purple">Today</span>
+          <span class="stat-hint">people / hr avg</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feed + Events row -->
+    <section class="mid-row">
+      <div class="card feed-card">
+        <div class="card-header">
+          <span class="card-title">Camera Feed</span>
+        </div>
+        <div class="feed-body">
+          <img id="camera-stream" alt="Camera stream" />
+          <div id="feed-offline" class="offline-msg">
+            <div class="offline-title">Camera Offline</div>
+            <div class="offline-sub" id="pi-url-display">--</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card events-card">
+        <div class="card-header">
+          <span class="card-title">Recent Events</span>
+          <span class="event-count" id="event-count">0 events</span>
+        </div>
+        <div class="events-body" id="events-body">
+          <div class="events-empty">No events yet</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hourly chart -->
+    <section class="card chart-section">
+      <div class="card-header">
+        <span class="card-title">Occupancy Chart</span>
+        <div class="chart-controls">
+          <div class="toggle-group">
+            <button class="toggle-btn toggle-hours active" data-val="12" onclick="setChartHours(12)">12h</button>
+            <button class="toggle-btn toggle-hours" data-val="24" onclick="setChartHours(24)">24h</button>
+          </div>
+          <div class="toggle-group">
+            <button class="toggle-btn toggle-res active" data-val="1" onclick="setChartRes(1)">1h</button>
+            <button class="toggle-btn toggle-res" data-val="2" onclick="setChartRes(2)">30m</button>
+            <button class="toggle-btn toggle-res" data-val="4" onclick="setChartRes(4)">15m</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart-area">
+        <div class="chart-bars" id="chart-bars"></div>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot dot-normal"></div>Normal</div>
+        <div class="legend-item"><div class="legend-dot dot-peak"></div>Peak</div>
+        <div class="legend-item"><div class="legend-dot dot-current"></div>Current</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== CONFIG MODAL ===== -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Connect to Raspberry Pi</div>
+      <div class="modal-sub">Enter your Pi's IP address and port to connect the dashboard.</div>
     </div>
-    <label class="modal-label">PI IP ADDRESS &amp; PORT</label>
-    <div class="modal-inputs">
-      <input id="pi-ip-input" type="text" placeholder="e.g. 192.168.1.42" value="localhost" />
-      <input id="pi-port-input" type="text" placeholder="8080" value="8080" class="port-input" />
+    <label class="form-label">IP ADDRESS &amp; PORT</label>
+    <div class="form-row">
+      <input id="pi-ip" type="text" class="form-input" placeholder="192.168.1.42" value="localhost" />
+      <input id="pi-port" type="text" class="form-input port-input" placeholder="8080" value="8080" />
     </div>
-    <button class="btn-primary" onclick="applyConfig()">Connect</button>
-    <button class="btn-secondary" onclick="applyConfig(true)">Use demo data (no Pi)</button>
+    <button class="btn-primary" onclick="applyConfig(false)">Connect</button>
+    <button class="btn-ghost" onclick="applyConfig(true)">Use demo data (no Pi)</button>
   </div>
 </div>
 
-<script src="script.js"></script>
+<script>
+// ==========================================
+//  CONFIG
+// ==========================================
+const POLL_MS     = 3000;
+const DB_REFRESH  = 15000;
+const EVENT_LIMIT = 50;
+
+let PI_HOST   = 'localhost';
+let PI_PORT   = '8080';
+let DEMO_MODE = false;
+
+// ==========================================
+//  DEMO / MOCK DATA
+// ==========================================
+const MOCK_HOURLY = [0,0,0,0,0,0,2,5,12,20,28,25,22,18,21,26,24,18,12,8,4,2,1,0];
+const MOCK_EVENTS = [
+  { direction: 'entry', occupancy: 5,  timestamp: Date.now()/1000 - 90  },
+  { direction: 'exit',  occupancy: 4,  timestamp: Date.now()/1000 - 210 },
+  { direction: 'entry', occupancy: 6,  timestamp: Date.now()/1000 - 330 },
+  { direction: 'entry', occupancy: 7,  timestamp: Date.now()/1000 - 450 },
+  { direction: 'exit',  occupancy: 6,  timestamp: Date.now()/1000 - 600 },
+  { direction: 'entry', occupancy: 8,  timestamp: Date.now()/1000 - 750 },
+  { direction: 'exit',  occupancy: 7,  timestamp: Date.now()/1000 - 900 },
+];
+
+// ==========================================
+//  STATE
+// ==========================================
+let peakCount     = 0;
+let peakTime      = '--:--';
+let occupancyData = new Array(96).fill(0); // 96 = 24h × 4 (15-min slots)
+let demoOccupancy = 18;
+let CHART_HOURS   = 12;  // visible window: 12 or 24
+let CHART_RES     = 1;   // slots per hour: 1=1h, 2=30min, 4=15min
+
+// ==========================================
+//  CLOCK
+// ==========================================
+function tickClock() {
+  const el = document.getElementById('clock');
+  if (el) el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ==========================================
+//  CONFIG MODAL
+// ==========================================
+function applyConfig(demo = false) {
+  DEMO_MODE = demo;
+  if (!demo) {
+    PI_HOST = document.getElementById('pi-ip').value.trim()   || 'localhost';
+    PI_PORT = document.getElementById('pi-port').value.trim() || '8080';
+  }
+  document.getElementById('modal-overlay').style.display = 'none';
+  const urlEl = document.getElementById('pi-url-display');
+  if (urlEl) urlEl.textContent = DEMO_MODE ? 'demo mode' : `${PI_HOST}:${PI_PORT}`;
+  setConnected(DEMO_MODE ? 'demo' : null);
+  init();
+}
+
+document.getElementById('settings-btn').addEventListener('click', () => {
+  document.getElementById('modal-overlay').style.display = 'flex';
+});
+
+document.getElementById('reset-btn').addEventListener('click', async () => {
+  if (!confirm('Reset occupancy count to 0?')) return;
+  if (DEMO_MODE) { demoOccupancy = 0; updateOccupancyUI(0); return; }
+  try {
+    await fetch(`http://${PI_HOST}:${PI_PORT}/api/reset`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch (e) {
+    console.error('Reset failed:', e);
+  }
+});
+
+// ==========================================
+//  CONNECTION STATUS
+// ==========================================
+function setConnected(state) {
+  const dot   = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  if (!dot || !label) return;
+  dot.className = 'conn-dot';
+  if (state === 'ok') {
+    dot.classList.add('ok');
+    label.textContent = `Connected \u00B7 ${PI_HOST}:${PI_PORT}`;
+  } else if (state === 'err') {
+    dot.classList.add('err');
+    label.textContent = `Offline \u00B7 ${PI_HOST}:${PI_PORT}`;
+  } else if (state === 'demo') {
+    dot.classList.add('demo');
+    label.textContent = 'Demo mode';
+  }
+}
+
+// ==========================================
+//  OCCUPANCY POLLING
+// ==========================================
+async function pollPi() {
+  if (DEMO_MODE) {
+    demoOccupancy += Math.round((Math.random() - 0.4) * 3);
+    demoOccupancy = Math.max(0, Math.min(60, demoOccupancy));
+    updateOccupancyUI(demoOccupancy);
+    return;
+  }
+  try {
+    const res  = await fetch(`http://${PI_HOST}:${PI_PORT}/api/count`, { signal: AbortSignal.timeout(2500) });
+    const data = await res.json();
+    updateOccupancyUI(data.occupancy ?? 0);
+    setConnected('ok');
+  } catch {
+    setConnected('err');
+  }
+}
+
+function updateOccupancyUI(count) {
+  count = Math.max(0, count);
+
+  // Occupancy value
+  const occEl = document.getElementById('stat-occupancy');
+  if (occEl) occEl.textContent = count;
+
+  // Status badge
+  const badge = document.getElementById('badge-occupancy');
+  if (badge) {
+    if (count === 0) {
+      badge.className = 'stat-badge badge-muted'; badge.textContent = 'Empty';
+    } else if (count < 10) {
+      badge.className = 'stat-badge badge-green'; badge.textContent = 'Active';
+    } else if (count < 30) {
+      badge.className = 'stat-badge badge-amber'; badge.textContent = 'Busy';
+    } else {
+      badge.className = 'stat-badge badge-red';   badge.textContent = 'Crowded';
+    }
+  }
+
+  // Peak
+  if (count > peakCount) {
+    peakCount = count;
+    peakTime  = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+  const peakEl = document.getElementById('stat-peak');
+  if (peakEl) peakEl.textContent = peakCount;
+  const peakTimeEl = document.getElementById('stat-peak-time');
+  if (peakTimeEl) peakTimeEl.textContent = `at ${peakTime}`;
+
+  // Update fine-grained 15-min slot
+  const slot15 = currentSlot15();
+  occupancyData[slot15] = Math.max(occupancyData[slot15], count);
+
+  // Hourly average (peak of each occupied hour)
+  const filledHours = [];
+  for (let h = 0; h < 24; h++) {
+    const peak = Math.max(...occupancyData.slice(h * 4, h * 4 + 4));
+    if (peak > 0) filledHours.push(peak);
+  }
+  const avg = filledHours.length
+    ? (filledHours.reduce((a, b) => a + b, 0) / filledHours.length).toFixed(1)
+    : '0';
+  const avgEl = document.getElementById('stat-avg');
+  if (avgEl) avgEl.textContent = avg;
+
+  renderChart();
+}
+
+// ==========================================
+//  CAMERA FEED
+// ==========================================
+function startFeed() {
+  if (DEMO_MODE) return;
+  const img       = document.getElementById('camera-stream');
+  const offline   = document.getElementById('feed-offline');
+  const statusDot = document.getElementById('feed-status-dot');
+
+  img.onload = () => {
+    img.style.display = 'block';
+    if (offline)   offline.style.display   = 'none';
+    if (statusDot) statusDot.classList.add('live');
+  };
+
+  img.onerror = () => {
+    img.style.display = 'none';
+    if (offline)   offline.style.display   = 'flex';
+    if (statusDot) statusDot.classList.remove('live');
+  };
+
+  img.src = `http://${PI_HOST}:${PI_PORT}/video_feed`;
+}
+
+// ==========================================
+//  EVENTS LOG
+// ==========================================
+async function loadEvents() {
+  if (DEMO_MODE) { renderEvents(MOCK_EVENTS); return; }
+  try {
+    const res    = await fetch(`http://${PI_HOST}:${PI_PORT}/api/events?limit=${EVENT_LIMIT}`, { signal: AbortSignal.timeout(2500) });
+    const events = await res.json();
+    renderEvents(events);
+    // Keep chart data fresh from event history
+    const today = new Date().toLocaleDateString('en-CA');
+    events
+      .filter(e => new Date(e.timestamp * 1000).toLocaleDateString('en-CA') === today)
+      .forEach(e => {
+        const d    = new Date(e.timestamp * 1000);
+        const slot = d.getHours() * 4 + Math.floor(d.getMinutes() / 15);
+        occupancyData[slot] = Math.max(occupancyData[slot], e.occupancy);
+      });
+    renderChart();
+  } catch {
+    /* silently ignore; keep previous events shown */
+  }
+}
+
+function renderEvents(events) {
+  const container = document.getElementById('events-body');
+  const countEl   = document.getElementById('event-count');
+  if (!container) return;
+
+  if (!Array.isArray(events) || events.length === 0) {
+    container.innerHTML = '<div class="events-empty">No events yet</div>';
+    if (countEl) countEl.textContent = '0 events';
+    return;
+  }
+
+  if (countEl) countEl.textContent = `${events.length} event${events.length !== 1 ? 's' : ''}`;
+
+  container.innerHTML = events.map(e => {
+    const time     = new Date(e.timestamp * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dirClass = e.direction === 'entry' ? 'dir-entry' : 'dir-exit';
+    const dirLabel = e.direction === 'entry' ? 'ENTRY' : 'EXIT';
+    return `
+      <div class="event-row">
+        <span class="event-dir ${dirClass}">${dirLabel}</span>
+        <span class="event-occ">${e.occupancy} ppl</span>
+        <span class="event-time">${time}</span>
+      </div>`;
+  }).join('');
+}
+
+// ==========================================
+//  CHART HELPERS
+// ==========================================
+function currentSlot15() {
+  const now = new Date();
+  return now.getHours() * 4 + Math.floor(now.getMinutes() / 15);
+}
+
+function slotToLabel(slot, res) {
+  const minsPerSlot = 60 / res;
+  const totalMins   = slot * minsPerSlot;
+  const h   = Math.floor(totalMins / 60) % 24;
+  const m   = totalMins % 60;
+  const h12 = h === 0 ? 12 : (h > 12 ? h - 12 : h);
+  const ap  = h < 12 ? 'a' : 'p';
+  return res === 1 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2,'0')}${ap}`;
+}
+
+function buildDisplayData() {
+  const factor     = 4 / CHART_RES;
+  const totalSlots = 24 * CHART_RES;
+  const display    = new Array(totalSlots).fill(0);
+  for (let ds = 0; ds < totalSlots; ds++) {
+    const s0 = Math.floor(ds * factor);
+    const s1 = s0 + Math.ceil(factor);
+    for (let s = s0; s < s1 && s < 96; s++)
+      display[ds] = Math.max(display[ds], occupancyData[s] || 0);
+  }
+  return display;
+}
+
+function setChartHours(h) {
+  CHART_HOURS = h;
+  document.querySelectorAll('.toggle-hours').forEach(b =>
+    b.classList.toggle('active', +b.dataset.val === h));
+  renderChart();
+}
+
+function setChartRes(r) {
+  CHART_RES = r;
+  document.querySelectorAll('.toggle-res').forEach(b =>
+    b.classList.toggle('active', +b.dataset.val === r));
+  renderChart();
+}
+
+// ==========================================
+//  HOURLY BAR CHART
+// ==========================================
+function renderChart() {
+  const container = document.getElementById('chart-bars');
+  if (!container) return;
+
+  const display     = buildDisplayData();
+  const windowSlots = CHART_HOURS * CHART_RES;
+  const now         = new Date();
+  const minsSinceMid = now.getHours() * 60 + now.getMinutes();
+  const curSlot     = Math.floor(minsSinceMid / (60 / CHART_RES));
+
+  // Window: current slot always on the far right
+  const winEnd   = curSlot;
+  const winStart = Math.max(0, winEnd - windowSlots + 1);
+
+  const items = [];
+  for (let i = winStart; i <= winEnd; i++) items.push({ slot: i, value: display[i] || 0 });
+  while (items.length < windowSlots) items.unshift({ slot: -1, value: 0 });
+
+  const max     = Math.max(...items.map(it => it.value), 1);
+  const peakVal = Math.max(...display);
+  const lblEvery = 2 * CHART_RES; // label roughly every 2 hours
+
+  container.innerHTML = items.map(it => {
+    const real = it.slot >= 0;
+    const cur  = it.slot === curSlot;
+    const peak = real && it.value === peakVal && it.value > 0;
+    const cls  = cur ? 'now' : (peak ? 'peak' : 'norm');
+    const h    = real ? Math.max((it.value / max) * 100, it.value > 0 ? 3 : 0) : 0;
+    const show = real && it.slot % lblEvery === 0;
+    const lbl  = show ? slotToLabel(it.slot, CHART_RES) : '';
+    const tip  = real ? `${slotToLabel(it.slot, CHART_RES)}: ${it.value}` : '';
+    return `
+      <div class="bar-col">
+        <div class="bar-tooltip">${tip}</div>
+        <div class="bar ${cls}" style="height:${h}%"></div>
+        <div class="bar-label" style="${lbl ? '' : 'visibility:hidden'}">${lbl || 'x'}</div>
+      </div>`;
+  }).join('');
+}
+
+// ==========================================
+//  INIT
+// ==========================================
+async function init() {
+  peakCount     = 0;
+  peakTime      = '--:--';
+  occupancyData = new Array(96).fill(0);
+
+  if (DEMO_MODE) {
+    MOCK_HOURLY.forEach((v, h) => {
+      for (let q = 0; q < 4; q++)
+        occupancyData[h * 4 + q] = Math.max(0, v + Math.round((Math.random()-0.5)*2));
+    });
+    peakCount = Math.max(...MOCK_HOURLY);
+    const pi  = MOCK_HOURLY.indexOf(peakCount);
+    peakTime  = pi < 12 ? `${pi || 12}:00 AM` : `${pi === 12 ? 12 : pi - 12}:00 PM`;
+    renderChart();
+    renderEvents(MOCK_EVENTS);
+    updateOccupancyUI(demoOccupancy);
+  } else {
+    // Load fine-grained data from today's events
+    try {
+      const res    = await fetch(`http://${PI_HOST}:${PI_PORT}/api/events?limit=2000`, { signal: AbortSignal.timeout(4000) });
+      const events = await res.json();
+      const today  = new Date().toLocaleDateString('en-CA');
+      events
+        .filter(e => new Date(e.timestamp * 1000).toLocaleDateString('en-CA') === today)
+        .forEach(e => {
+          const d    = new Date(e.timestamp * 1000);
+          const slot = d.getHours() * 4 + Math.floor(d.getMinutes() / 15);
+          occupancyData[slot] = Math.max(occupancyData[slot], e.occupancy);
+        });
+    } catch {
+      // Fall back to hourly data expanded into 15-min slots
+      try {
+        const res  = await fetch(`http://${PI_HOST}:${PI_PORT}/api/hourly`, { signal: AbortSignal.timeout(3000) });
+        const data = await res.json();
+        if (Array.isArray(data) && data.length === 24)
+          data.forEach((v, h) => { for (let q = 0; q < 4; q++) occupancyData[h * 4 + q] = v; });
+      } catch { console.warn('Could not load history.'); }
+    }
+
+    // Peak data
+    try {
+      const res  = await fetch(`http://${PI_HOST}:${PI_PORT}/api/peak`, { signal: AbortSignal.timeout(3000) });
+      const data = await res.json();
+      if (data.peak_count) peakCount = data.peak_count;
+      if (data.peak_time)  peakTime  = data.peak_time;
+    } catch { console.warn('Could not load peak data.'); }
+
+    renderChart();
+    loadEvents();
+  }
+
+  startFeed();
+  pollPi();
+  setInterval(pollPi,    POLL_MS);
+  setInterval(loadEvents, DB_REFRESH);
+}
+
+</script>
 </body>
 </html>

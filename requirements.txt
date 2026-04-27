@@ -4,6 +4,7 @@ numpy
 flask
 psutil
 scipy
+flask-cors
 
 # ── TFLite Runtime ────────────────────────────────────────────────────────────
 # Pick ONE of the following based on your platform:
