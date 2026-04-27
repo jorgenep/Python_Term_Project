@@ -229,7 +229,6 @@ async function init() {
     console.warn('Could not load hourly history, starting fresh.');
   }
 
-    // After the hourly fetch, add this:
   try {
     const res = await fetch(`http://${PI_HOST}:${PI_PORT}/api/peak`);
     const data = await res.json();
