@@ -86,7 +86,7 @@ function updatePiUI(d) {
   const hr = new Date().getHours();
   occupancyHistory[hr] = Math.max(occupancyHistory[hr], count);
   const filled = occupancyHistory.filter(v => v > 0);
-  const avg = filled.length ? Math.round(filled.reduce((a,b) => a+b,0) / filled.length) : 0;
+  const avg = filled.length ? (filled.reduce((a,b) => a+b,0) / filled.length).toFixed(2) : "0.00";
   
   if (typeof renderChart === 'function') {
       renderChart(occupancyHistory);

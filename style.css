@@ -19,8 +19,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Poppins', sans-serif;
-  background: var(--bg);
+  font-family: 'Inter', sans-serif;  background: var(--bg);
   color: var(--text);
   min-height: 100vh;
 }
@@ -62,8 +61,7 @@ header {
 .header-right { display: flex; align-items: center; gap: 20px; }
 
 .clock {
-  font-family: 'DM Mono', monospace;
-  font-size: .85rem;
+  font-family: 'Inter', sans-serif;  font-size: .85rem;
   color: var(--muted);
 }
 
@@ -108,8 +106,8 @@ main {
    TOP ROW: STAT CARDS (50/50 Split)
    ========================================= */
 .stat-card {
-  flex: 1 1 calc(50% - 12px);
-  max-width: calc(50% - 12px);
+  flex: 1 1 calc(33% - 16px);
+  max-width: calc(33% - 16px);
   gap: 4px;
   position: relative;
   overflow: hidden;
@@ -205,7 +203,7 @@ main {
 }
 
 .feed-count {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   color: #fff;
   font-size: .8rem;
   text-align: left;
@@ -250,8 +248,7 @@ main {
 .dwell-item .dwell-label { font-size: .7rem; color: var(--muted); }
 
 .dwell-item .dwell-val {
-  font-family: 'DM Mono', monospace;
-  font-size: 1rem;
+  font-family: 'Inter', sans-serif;  font-size: 1rem;
   font-weight: 600;
   margin-top: 2px;
 }
@@ -302,8 +299,7 @@ main {
 .bar.norm { background: #c7d2fe; }
 
 .bar-label {
-  font-family: 'DM Mono', monospace;
-  font-size: .6rem;
+  font-family: 'Inter', sans-serif;  font-size: .6rem;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -384,7 +380,6 @@ main {
    RESPONSIVE
    ========================================= */
 @media (max-width: 600px) {
-  /* On mobile, stack the two top cards on top of each other */
   .stat-card {
     flex: 1 1 100%;
     max-width: 100%;
